@@ -8,7 +8,7 @@ assert.equal(pkg.name, 'deploybuddy');
 assert.equal(pkg.displayName, 'DeployBuddy');
 assert.equal(pkg.description, 'Your brutally honest pre-deployment sanity checker.');
 assert.equal(pkg.version, '0.1.0');
-assert.equal(pkg.publisher, 'your-marketplace-publisher-id', 'Replace the documented placeholder deliberately before publishing.');
+assert.equal(pkg.publisher, 'precraftslabsPrecraftsDigitalLabs', 'Replace the documented placeholder deliberately before publishing.');
 assert.ok(pkg.license && fs.existsSync(path.join(root, 'LICENSE')));
 assert.ok(pkg.engines?.vscode && pkg.main);
 assert.ok(fs.existsSync(path.join(root, pkg.main)), 'Compile the runtime entry point before package validation.');
