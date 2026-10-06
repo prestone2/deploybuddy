@@ -1,0 +1,166 @@
+{
+  "name": "deploybuddy",
+  "displayName": "DeployBuddy",
+  "description": "Your brutally honest pre-deployment sanity checker.",
+  "version": "0.1.0",
+  "publisher": "your-marketplace-publisher-id",
+  "license": "MIT",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other",
+    "SCM"
+  ],
+  "keywords": [
+    "deploy",
+    "deployment",
+    "devops",
+    "git",
+    "source control",
+    "testing",
+    "diagnostics",
+    "copilot",
+    "ai",
+    "developer tools",
+    "productivity",
+    "humor"
+  ],
+  "activationEvents": [
+    "onStartupFinished",
+    "onCommand:deploybuddy.checkDeployment",
+    "onCommand:deploybuddy.explainRisk",
+    "onCommand:deploybuddy.roastDeployment",
+    "onChatParticipant:deploybuddy.deployment",
+    "onCommand:deploybuddy.prePushCheck",
+    "onCommand:deploybuddy.gitHealth",
+    "onCommand:deploybuddy.about"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "deploybuddy.checkDeployment",
+        "title": "Should I Deploy?",
+        "category": "DeployBuddy"
+      },
+      {
+        "command": "deploybuddy.explainRisk",
+        "title": "Explain My Risk",
+        "category": "DeployBuddy"
+      },
+      {
+        "command": "deploybuddy.roastDeployment",
+        "title": "Roast My Deployment",
+        "category": "DeployBuddy"
+      },
+      {
+        "command": "deploybuddy.prePushCheck",
+        "title": "Pre-Push Check",
+        "category": "DeployBuddy",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "deploybuddy.gitHealth",
+        "title": "Git Health",
+        "category": "DeployBuddy",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "deploybuddy.about",
+        "title": "About",
+        "category": "DeployBuddy"
+      }
+    ],
+    "configuration": {
+      "title": "DeployBuddy",
+      "properties": {
+        "deploybuddy.aiEnabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use an available VS Code language model to generate contextual DeployBuddy explanations."
+        },
+        "deploybuddy.humorLevel": {
+          "type": "string",
+          "enum": [
+            "low",
+            "normal",
+            "high"
+          ],
+          "default": "normal",
+          "description": "Influence explanation wording only. Never changes the deterministic score."
+        }
+      }
+    },
+    "chatParticipants": [
+      {
+        "id": "deploybuddy.deployment",
+        "name": "deploybuddy",
+        "fullName": "DeployBuddy",
+        "description": "Your brutally honest deployment sanity checker.",
+        "isSticky": true,
+        "commands": [
+          {
+            "name": "check",
+            "description": "Run a fresh deterministic deployment check."
+          },
+          {
+            "name": "explain",
+            "description": "Explain the latest deployment risk."
+          },
+          {
+            "name": "roast",
+            "description": "Roast the deployment situation, not the developer."
+          },
+          {
+            "name": "fix",
+            "description": "Prioritize fixes from workspace evidence."
+          },
+          {
+            "name": "status",
+            "description": "Show a fresh compact workspace summary."
+          },
+          {
+            "name": "git",
+            "description": "Show fresh Git health and advisory source-control findings."
+          }
+        ]
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "deploybuddy.prePushCheck",
+          "when": "scmProvider == git",
+          "group": "navigation@90"
+        },
+        {
+          "command": "deploybuddy.gitHealth",
+          "when": "scmProvider == git",
+          "group": "deploybuddy@1"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "prepublishOnly": "npm run validate",
+    "compile": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "lint": "eslint src test",
+    "test": "npm run compile && node --test --test-isolation=none test/risk.test.cjs test/services.test.cjs",
+    "check:package": "node scripts/check-package.cjs",
+    "validate": "npm run compile && npm run lint && npm test && npm run check:package",
+    "package:vsix": "vsce package --no-dependencies --allow-missing-repository --no-rewrite-relative-links"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.96.0",
+    "@vscode/vsce": "^4.0.0",
+    "eslint": "^10.12.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.0"
+  }
+}

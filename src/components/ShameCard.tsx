@@ -1,0 +1,7 @@
+import { Trash2, TriangleAlert, Siren, Coffee, FlaskConical, Gauge, UserRound, Quote } from 'lucide-react'
+import type { ShameEntry } from '../types/shame'
+import { formatDeploymentTime, formatSavedTime } from '../lib/wallOfShame'
+export function ShameCard({ entry, now, onDelete }: { entry: ShameEntry; now: number; onDelete: (id: string) => void }) {
+  const Icon = entry.risk > 65 ? Siren : TriangleAlert
+  return <article className={`panel shame-card ${entry.risk > 65 ? 'danger' : entry.risk > 30 ? 'warning' : 'safe'}`}><div className="shame-card-top"><span><Icon size={18}/><strong>{entry.risk}%</strong> Risk</span><button className="icon-button" aria-label={`Remove ${entry.title}`} onClick={() => onDelete(entry.id)}><Trash2 size={16}/></button></div><h3>{entry.title}</h3><span className="shame-verdict">{entry.verdict}</span><p className="shame-date">{entry.day} <span>•</span> {formatDeploymentTime(entry.time)}</p><dl className="shame-details"><div><dt><FlaskConical size={13}/>Tests</dt><dd>{entry.tests}</dd></div><div><dt><Coffee size={13}/>Coffee</dt><dd>{entry.coffee} {entry.coffee === 1 ? 'cup' : 'cups'}</dd></div><div><dt><Gauge size={13}/>Confidence</dt><dd>{entry.confidence}%</dd></div><div><dt><UserRound size={13}/>Boss</dt><dd>{entry.bossOnline ? 'Online 👀' : 'Offline 🕊️'}</dd></div></dl><blockquote><Quote size={16}/><p>“{entry.message}”</p></blockquote><time dateTime={entry.timestamp} title={new Date(entry.timestamp).toLocaleString()}>{formatSavedTime(entry.timestamp, now)}</time></article>
+}

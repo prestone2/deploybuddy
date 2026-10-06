@@ -1,0 +1,4 @@
+export function RiskMeter({ risk, revision }: { risk: number; revision: number }) {
+ const rotation = -90 + risk * 1.8
+ return <div className="meter" key={revision} role="meter" aria-label="Deployment risk" aria-valuemin={0} aria-valuemax={100} aria-valuenow={risk}><svg viewBox="0 0 300 170" aria-hidden="true"><path className="meter-track" d="M 30 145 A 120 120 0 0 1 270 145"/><path className="meter-safe" d="M 30 145 A 120 120 0 0 1 79.5 47.9"/><path className="meter-warning" d="M 87 43 A 120 120 0 0 1 204.5 38.1"/><path className="meter-danger" d="M 212 42 A 120 120 0 0 1 270 145"/><g className="meter-needle" style={{ transform: `rotate(${rotation}deg)` }}><path d="M 146 142 L 150 59 L 154 142 Z" fill="currentColor"/></g><circle cx="150" cy="145" r="7" fill="currentColor"/></svg><div className="meter-value"><strong>{risk}<span>%</span></strong><span>RISK LEVEL</span></div><div className="meter-labels"><span>0% · chill</span><span>100% · chaos</span></div></div>
+}

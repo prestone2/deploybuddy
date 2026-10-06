@@ -1,0 +1,31 @@
+const vscode=require('vscode');const assert=require('node:assert/strict');const fs=require('node:fs');
+const {getGitSignals}=require('../out/services/gitService');const {getDiagnosticSignals}=require('../out/services/diagnosticsService');const {getTestSignals}=require('../out/services/testingService');
+exports.run=async()=>{
+ const folder=vscode.workspace.workspaceFolders?.[0];const mode=folder?.name??'empty';
+ const ext=vscode.extensions.getExtension('deploybuddy.deploybuddy');assert.ok(ext);await ext.activate();
+ const commands=await vscode.commands.getCommands(true);for(const id of ['deploybuddy.checkDeployment','deploybuddy.explainRisk','deploybuddy.roastDeployment','deploybuddy.prePushCheck','deploybuddy.gitHealth'])assert.ok(commands.includes(id));
+ const config=vscode.workspace.getConfiguration('deploybuddy');assert.equal(ext.packageJSON.contributes.configuration.properties['deploybuddy.aiEnabled'].default,true);
+ await config.update('aiEnabled',false,vscode.ConfigurationTarget.Global);
+ const first=await vscode.commands.executeCommand('deploybuddy.explainRisk');assert.ok(first);const roasted=await vscode.commands.executeCommand('deploybuddy.roastDeployment');assert.equal(roasted.score,first.score);assert.equal(roasted.verdict,first.verdict);
+ assert.equal(ext.packageJSON.contributes.commands[0].title,'Should I Deploy?');
+ let git=await getGitSignals();
+ if(mode==='git'){for(let i=0;!git.available&&i<20;i++){await new Promise(r=>setTimeout(r,500));git=await getGitSignals()}assert.equal(git.available,true);assert.equal(git.branch,'main');assert.equal(git.untrackedFiles,1);assert.equal(git.hasUncommittedChanges,true)}else assert.equal(git.available,false);
+ const collection=vscode.languages.createDiagnosticCollection('deploybuddy-integration');
+ if(folder){const diagnostic=new vscode.Diagnostic(new vscode.Range(0,0,0,1),'Test error',vscode.DiagnosticSeverity.Error);collection.set(vscode.Uri.joinPath(folder.uri,'fixture.ts'),[diagnostic]);await new Promise(r=>setTimeout(r,100));assert.ok(getDiagnosticSignals().errors>=1)}
+ assert.equal(getTestSignals().testStatus,'unknown');collection.dispose();
+ const running=vscode.commands.executeCommand('deploybuddy.checkDeployment');await new Promise(r=>setTimeout(r,1000));await vscode.commands.executeCommand('notifications.clearAll');
+ const result=await Promise.race([running,new Promise((_,reject)=>setTimeout(()=>reject(Error('Command did not finish after dismissing notification')),3000))]);
+ assert.ok(result.score>=0&&result.score<=100);
+ const contribution=ext.packageJSON.contributes.chatParticipants[0];assert.equal(contribution.name,'deploybuddy');assert.deepEqual(contribution.commands.map(c=>c.name),['check','explain','roast','fix','status','git']);
+ const {createDeploymentSession}=require('../out/services/deploymentSession');const {createDeployBuddyHandler}=require('../out/chat/deployBuddyParticipant');
+ const session=createDeploymentSession(()=>{},()=>{}),handler=createDeployBuddyHandler(session,()=>{});
+ for(const intent of ['check','explain','roast','fix','status','git',undefined]){let markdown='';const stream={progress(){},markdown(s){markdown+=s},button(){}};const token=new vscode.CancellationTokenSource();const response=await handler({command:intent,prompt:intent?'':'can I ship this?'},{history:[]},stream,token.token);assert.equal(response.metadata.intent,intent??'check');assert.ok(markdown.includes(`${session.latest.result.score}%`));if(mode==='empty')assert.ok(markdown.includes('no workspace open'));if(intent==='fix')assert.ok(markdown.includes('What to fix first'));token.dispose();}session.dispose();
+ const health=await vscode.commands.executeCommand('deploybuddy.gitHealth');assert.ok(health.result);
+ const prePush=vscode.commands.executeCommand('deploybuddy.prePushCheck');await new Promise(r=>setTimeout(r,500));await vscode.commands.executeCommand('notifications.clearAll');assert.ok((await prePush).result);
+ await config.update('aiEnabled',true,vscode.ConfigurationTarget.Global);
+ const {generateAIVerdict,getAIOptions}=require('../out/services/aiVerdictService');const {getContextSignals}=require('../out/services/contextService');
+ const source=new vscode.CancellationTokenSource();const signals={workspaceFolders:folder?[folder.name]:[],git,diagnostics:getDiagnosticSignals(),tests:getTestSignals(),context:getContextSignals()};
+ const ai=await generateAIVerdict(signals,result,getAIOptions(),source.token);assert.equal(ai.status,'unavailable');source.dispose();
+ fs.writeFileSync(`/tmp/deploybuddy-host/${mode}-result.json`,JSON.stringify({mode,command:true,explain:true,roast:true,aiUnavailable:true,chat:true,guardrails:true,git,tests:'unknown',score:result.score,level:result.level},null,2));
+ console.log(`DEPLOYBUDDY HOST PASS: ${mode}`);
+};
