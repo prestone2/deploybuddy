@@ -1,0 +1,28 @@
+{
+  "name": "deploybuddy",
+  "version": "0.1.0",
+  "description": "Local deployment intelligence for your terminal.",
+  "license": "MIT",
+  "type": "commonjs",
+  "bin": { "deploybuddy": "./dist/cli.js" },
+  "exports": { "./package.json": "./package.json" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "engines": { "node": ">=20" },
+  "repository": { "type": "git", "url": "https://github.com/prestone2/deploybuddy.git", "directory": "apps/cli" },
+  "homepage": "https://github.com/prestone2/deploybuddy#readme",
+  "bugs": { "url": "https://github.com/prestone2/deploybuddy/issues" },
+  "keywords": ["deployment", "deploy", "devops", "git", "testing", "release-readiness"],
+  "scripts": {
+    "build": "npm --prefix ../../packages/core run build && npm --prefix ../../packages/node-adapter run build && tsc -p tsconfig.json && node -e \"require('node:fs').chmodSync('dist/cli.js',0o755)\"",
+    "start": "node dist/cli.js",
+    "test": "npm run build && node --test test/*.test.cjs"
+  },
+  "dependencies": {
+    "@deploybuddy/core": "file:../../packages/core",
+    "@deploybuddy/node-adapter": "file:../../packages/node-adapter"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "~6.0.2"
+  }
+}

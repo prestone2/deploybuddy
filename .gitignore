@@ -10,7 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+/dist/release/
 *.local
+!apps/github-action/dist/
+!apps/github-action/dist/**
+apps/github-action/lib/
 
 # Editor directories and files
 .vscode/*

@@ -1,138 +1,53 @@
 # DeployBuddy
 
-**Your brutally honest pre-deployment sanity checker.**
+**Your brutally honest pre-deployment sanity checker. Know before you ship.**
 
-*Know before you ship.*
+DeployBuddy inspects the current VS Code workspace and gives you a deterministic risk score, evidence confidence, repository policy result, changed-area attention, Release Readiness, and configured Release Gates. It includes Git guardrails, local assessment history, a status bar, and the `@deploybuddy` Chat participant.
 
-DeployBuddy checks the current VS Code workspace and gives you a deterministic deployment risk score with evidence you can inspect. It reads Git state, workspace diagnostics, and local time, then offers practical next steps with a little developer-friendly humor.
+## Highlights
 
-## Features
-
-- Deterministic deployment risk score and concise verdict
-- Workspace diagnostics and read-only Git health analysis
-- Pre-Push Check and Git guardrails for conflicts, detached HEAD, upstream drift, and risky working trees
-- Optional VS Code Language Model explanations and deployment roasts
-- `@deploybuddy` chat participant with slash commands and natural-language intents
-- Deterministic AI fallback, prioritized remediation, output channel, and status bar context
-- Source Control title menu actions for Git workspaces
-- No backend, database, telemetry, automatic deployment, or repository mutation
-
-## Example
-
-```text
-DeployBuddy: 91% risk — DO NOT DEPLOY
-
-Why:
-- 3 workspace errors
-- 8 uncommitted files
-- branch is behind upstream
-- you're on main
-- it's Friday evening
-
-Advice:
-Fix the errors and sync your branch before touching production.
-```
-
-Exact findings depend on signals available from the current workspace. Unknown signals are reported as unknown instead of being treated as clean.
-
-## Commands
-
-- **DeployBuddy: Should I Deploy?** — collect current signals, calculate risk, and explain the result
-- **DeployBuddy: Explain My Risk** — explain the latest result, collecting one if needed
-- **DeployBuddy: Roast My Deployment** — give a grounded, slightly sharper explanation
-- **DeployBuddy: Pre-Push Check** — calculate deployment risk and inspect advisory Git guardrails; it never pushes
-- **DeployBuddy: Git Health** — show branch, upstream, ahead/behind, file counts, conflicts, and HEAD state
-- **DeployBuddy: About** — show the extension version and its deterministic-risk model
-
-The DeployBuddy status bar item runs a fresh deployment check. Git workspaces also get Pre-Push Check and Git Health actions in the Source Control title menu.
+- Shared deterministic assessment logic with the CLI and GitHub Action
+- Read-only Git health and pre-push guardrails
+- Optional VS Code Language Model explanations; AI never changes assessment outcomes
+- Repository-local declarative `.deploybuddy.json` with editor schema validation
+- Local-only baselines and history; changed-area classification inspects names/statuses, not source contents
+- No telemetry, direct AI HTTP requests, deployment, or Git mutation
 
 ## Chat
 
 ```text
 @deploybuddy should I deploy?
 @deploybuddy /check
-@deploybuddy /explain
-@deploybuddy /roast
+@deploybuddy /readiness
+@deploybuddy /release
 @deploybuddy /fix
-@deploybuddy /status
 @deploybuddy /git
+@deploybuddy /changes
+@deploybuddy /history
 ```
 
-Chat uses current workspace signals. `/fix` gives deterministic prioritized recommendations; `/git` gives Git health; natural-language requests such as “am I behind origin?” and “any merge conflicts?” are routed locally. Chat participants require a VS Code version and Chat mode that support them. AI wording also requires a compatible language model and any provider permissions it requests. The deterministic commands work without an AI provider.
+Chat/model availability depends on VS Code Chat support and a compatible provider. Core assessment commands work without AI. Settings are `deploybuddy.aiEnabled` (default `true`) and `deploybuddy.humorLevel` (`low`, `normal`, or `high`). Humor level affects wording only.
 
-## Risk model
+## Commands
 
-**The deterministic risk engine is authoritative.** It calculates the score, level, and verdict from explicit rules. AI never calculates, edits, or overrides them; it only explains the supplied result. Git guardrails are a separate advisory analysis and do not add risk points.
+Command Palette includes Should I Deploy?, Explain My Risk, Roast My Deployment, Pre-Push Check, Git Health, Show Policy, Release Readiness, Check Release Gates, Save/Compare/Clear Baseline, Show/Clear History, Show Recent Risk Changes, Show Changed Areas, and About.
 
-The score starts at zero and adds: Friday +20; Saturday/Sunday +25; after 16:00 +15 and after 20:00 another +10; dirty working tree +10; more than 10 changed files +10; diagnostics errors +25 and at least five errors another +15; at least 10 warnings +10; known failed tests +35; unknown/not-run tests +15; dirty `main`/`master` +10. The result is capped at 100. Scores 0–30 are safe, 31–65 caution, and 66–100 danger.
+## Risk and privacy
 
-Git guardrails separately report conflicts, dirty detached HEAD, dirty primary branches before an explicitly requested pre-push check, upstream drift, large changes, and untracked or unstaged files. A push check does not execute Git operations.
+The deterministic risk score is authoritative. Confidence, policy, change attention, readiness, and release gates are separate outputs. AI only rephrases allowlisted summaries when enabled and invoked through the official VS Code Language Model API. DeployBuddy does not intentionally send source contents, diffs, changed filenames, secrets, credentials, environment variables, or terminal history. Model providers apply their own data policies. See the canonical [Privacy](../docs/privacy.md), [Concepts](../docs/concepts.md), and [Configuration](../docs/configuration.md) documents.
 
-## Privacy
+The extension does not run tests, deploy, intercept Git operations, or mutate repository state. VS Code does not expose reliable test outcomes for arbitrary third-party test extensions; missing test state remains unknown. There is no stable public pre-push interception hook, so checks are advisory commands.
 
-When AI is enabled, DeployBuddy may send the selected VS Code language model a minimal summary: branch and upstream names, Git file/ahead/behind/conflict counts, diagnostics counts, test status, risk score/verdict, deterministic reasons, and local day/time. The provider may process that request under its own account and data policies.
-
-DeployBuddy intentionally excludes source code, file contents, diagnostic text, Git diffs, commit contents, repository paths, remote authentication details, environment variables, credentials, secrets, terminal history, chat history, and arbitrary workspace files. Disable `deploybuddy.aiEnabled` to keep explanations local and deterministic. DeployBuddy itself has no telemetry or direct network requests.
-
-## Limitations
-
-- Stable VS Code APIs do not provide reliable workspace-wide results from arbitrary third-party test extensions. Test status is currently `unknown`; DeployBuddy does not infer test outcomes from test files.
-- There is no stable public before-push interception hook. Pre-Push Check is an explicit advisory command; Git actions are never blocked, replaced, or intercepted.
-- Chat and AI availability depends on VS Code, participant-capable Chat mode, a compatible model provider, and permissions. AI failure falls back to deterministic wording.
-- Git counts use the built-in Git extension's cached local view. DeployBuddy does not fetch, so upstream counts may be stale.
-- DeployBuddy is advisory. It does not deploy, run tests, or modify files, commits, branches, remotes, Git configuration, or repository state.
-
-## Settings
-
-- `deploybuddy.aiEnabled` — boolean, default `true`. Turn off model discovery and requests for deterministic explanations only.
-- `deploybuddy.humorLevel` — `low`, `normal` (default), or `high`. Changes wording only and never changes the score.
-
-## Development
+## Development and release
 
 Use Node.js 22 or newer in this directory:
 
-```bash
+```sh
 npm install
-npm run compile
-npm run lint
-npm test
 npm run validate
+npm run package:vsix
 ```
 
-Press **F5** and choose **Run DeployBuddy Extension** to start an Extension Development Host. The built-in test suite mocks VS Code APIs; separate host harnesses in `test/` cover real Git, non-Git, and empty workspaces. Chat participant autocomplete and submission should also be checked manually in a normal VS Code installation (see the release checklist).
+Open this directory in VS Code and press F5 to launch the Extension Development Host. Install a local package with `code --install-extension deploybuddy-0.2.0.vsix --force`. See [Release preparation](../docs/releasing.md) for the full manual checklist. Packaging never publishes.
 
-The extension has no production npm dependencies. TypeScript compiles to `out/`, which is included in the VSIX.
-
-## Release
-
-The current package version is **0.1.0**, the first public preview. Versions follow semantic versioning: increment the patch for compatible fixes, minor for compatible features, and major for incompatible changes. Create a release only after reviewing the checklist below.
-
-`publisher` in `package.json` is the explicit placeholder `your-marketplace-publisher-id`. Replace it with a publisher ID you control before Marketplace publication. The repository URL and Marketplace homepage are not configured because no canonical public project URL has been established; add verified URLs to `repository`, `homepage`, and `bugs` when known. Do not publish with the placeholder publisher.
-
-An MIT `LICENSE` is included. Build a local package with `npm run package:vsix`; this command does not publish or upload anything. The expected artifact is `deploybuddy-0.1.0.vsix`.
-
-### Manual release checklist
-
-- Install the VSIX locally and confirm it appears in the Extensions view.
-- Open a Git workspace; run Should I Deploy, Git Health, and Pre-Push Check.
-- Inspect the DeployBuddy status bar and output channel.
-- Verify `deploybuddy.aiEnabled` off; when a compatible provider is available, verify it on too.
-- Test `@deploybuddy` and `/check`, `/status`, `/roast`, `/fix`, `/git` in participant-capable Chat.
-- Test an empty window and a non-Git workspace.
-- Confirm the project repository remains unchanged after checks.
-- Uninstall and reinstall the packaged extension once.
-- Confirm a real publisher ID and canonical project URLs are configured before publishing.
-
-### Security and distribution review
-
-The release source contains no hardcoded credentials or tokens. Production AI uses the VS Code Language Model API and an explicit summarized-signal allowlist; the extension does not make direct HTTP requests. Production Git inspection uses the built-in read-only API and does not shell out or invoke Git mutation methods. No arbitrary workspace file contents are read or sent to a model. `npm run validate` checks compilation, lint, tests, and package metadata before packaging.
-
-Review the current development dependency audit with `npm audit` before each release. A clean audit is not a substitute for reviewing updates; avoid automatic major upgrades. The VSIX excludes tests, development configuration, source files, source maps, and web-app artifacts while retaining runtime output, package metadata, README, license, and icon.
-
-## Changelog
-
-The package includes `CHANGELOG.md`.
-
-## License
-
-MIT. The full license text is included in `LICENSE`.
+The package version 0.1.0 was previously published. Version 0.2.0 prepares the additive capabilities introduced since that release. See [CHANGELOG](CHANGELOG.md) and the cross-platform [compatibility policy](../docs/architecture.md).

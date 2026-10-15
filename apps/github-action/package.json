@@ -1,0 +1,23 @@
+{
+  "name": "deploybuddy-github-action",
+  "version": "0.2.0",
+  "private": true,
+  "description": "GitHub Action for deterministic DeployBuddy workspace assessment.",
+  "license": "MIT",
+  "type": "commonjs",
+  "scripts": {
+    "build": "npm --prefix ../../packages/core run build && npm --prefix ../../packages/node-adapter run build && tsc -p tsconfig.json && esbuild src/index.ts --bundle --platform=node --target=node20 --outfile=dist/index.js --minify",
+    "test": "npm run build && node --test test/*.test.cjs"
+  },
+  "dependencies": {
+    "@actions/core": "^2.0.3",
+    "@actions/github": "^9.1.1",
+    "@deploybuddy/core": "file:../../packages/core",
+    "@deploybuddy/node-adapter": "file:../../packages/node-adapter"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.12",
+    "typescript": "~6.0.2"
+  }
+}

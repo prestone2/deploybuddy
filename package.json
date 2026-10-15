@@ -7,7 +7,18 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "core:build": "npm --prefix packages/core run build",
+    "node-adapter:build": "npm --prefix packages/core run build && npm --prefix packages/node-adapter run build",
+    "action:build": "npm --prefix apps/github-action run build",
+    "action:test": "npm --prefix apps/github-action test",
+    "vscode:build": "npm --prefix deploybuddy-extension run compile",
+    "cli:build": "npm --prefix apps/cli run build",
+    "vscode:test": "npm --prefix deploybuddy-extension test",
+    "cli:test": "npm --prefix apps/cli test",
+    "validate:platform": "node scripts/validate-platform.cjs",
+    "pack:all": "node scripts/pack-artifacts.cjs",
+    "release:check": "node scripts/release-check.cjs"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import type { ChangedFile } from '@deploybuddy/core';
+import { normalizeChangedFiles } from '@deploybuddy/core';
 import type { GitSignals, RepositorySignals } from '../types/deployment';
 // Minimal read-only subset of vscode.git API v1. No Git mutation APIs are exposed here.
 interface GitChange { readonly uri: vscode.Uri; readonly status: number }
@@ -41,7 +43,8 @@ function snapshot(repository: GitRepository): RepositorySignals {
     conflictFiles: state.mergeChanges ? count(conflicts) : conflicts.length ? count(conflicts) : null,
     detachedHead: head?.name ? false : head?.commit ? true : null,
     modifiedFiles: count(modified), stagedFiles: count(state.indexChanges), untrackedFiles: count(untracked),
-    changedFiles, hasUncommittedChanges: changedFiles > 0 };
+    changedFiles, hasUncommittedChanges: changedFiles > 0,
+    ...(head?.commit && /^[a-f0-9]{40,64}$/i.test(head.commit) ? { revision: { sha: head.commit.toLowerCase(), shortSha: head.commit.slice(0, 7).toLowerCase(), ...(head.name ? { branch: head.name.slice(0, 255) } : {}), detached: !head.name } } : {}) };
 }
 export async function getGitSignals(): Promise<GitSignals> {
   if (!vscode.workspace.workspaceFolders?.length) return unavailableGit('No workspace folder is open.');
@@ -54,9 +57,32 @@ export async function getGitSignals(): Promise<GitSignals> {
     if (!repositories.length) return unavailableGit('No repository is currently detected by the built-in Git extension.');
     const total = (key: 'ahead' | 'behind' | 'unstagedFiles' | 'conflictFiles'): number | null => repositories.some(r => r[key] === null) ? null : repositories.reduce((sum, r) => sum + (r[key] ?? 0), 0);
     return { available: true, repositories, upstream: repositories.length === 1 ? repositories[0]?.upstream ?? null : null, ahead: total('ahead'), behind: total('behind'), unstagedFiles: total('unstagedFiles'), conflictFiles: total('conflictFiles'), detachedHead: repositories.some(r => r.detachedHead === true) ? true : repositories.some(r => r.detachedHead === null) ? null : false, branch: repositories.length === 1 ? repositories[0]?.branch ?? null : 'Multiple repositories (see details)',
+      ...(repositories.length === 1 && repositories[0]?.revision ? { revision: repositories[0].revision } : {}),
       modifiedFiles: repositories.reduce((n, r) => n + r.modifiedFiles, 0), stagedFiles: repositories.reduce((n, r) => n + r.stagedFiles, 0),
       untrackedFiles: repositories.reduce((n, r) => n + r.untrackedFiles, 0), changedFiles: repositories.reduce((n, r) => n + r.changedFiles, 0),
       hasUncommittedChanges: repositories.some(r => r.hasUncommittedChanges), dirtyPrimaryBranch: repositories.some(r => r.hasUncommittedChanges && (r.branch === 'main' || r.branch === 'master')),
       note: 'Read-only snapshot from the built-in Git extension. Counts cover each detected repository, including its files outside a nested workspace folder. Modified includes deletions and conflicts; distinct changed files are deduplicated per repository.' };
   } catch { return unavailableGit('The built-in Git extension could not provide repository signals.'); }
+}
+
+export async function getChangedFiles(): Promise<ChangedFile[]> {
+  try {
+    const extension = vscode.extensions.getExtension<GitExtension>('vscode.git');
+    if (!extension) return [];
+    const exports = extension.isActive ? extension.exports : await extension.activate();
+    const api = exports.getAPI(1);
+    const files: ChangedFile[] = [];
+    for (const repository of api.repositories) {
+      const root = repository.rootUri.path.replace(/\/$/, '');
+      const entries = [...repository.state.indexChanges, ...repository.state.workingTreeChanges, ...repository.state.mergeChanges, ...(repository.state.untrackedChanges ?? [])];
+      for (const item of entries) {
+        if (item.status === IGNORED) continue;
+        const uriPath = item.uri.path;
+        const relative = uriPath.startsWith(`${root}/`) ? uriPath.slice(root.length + 1) : uriPath;
+        const status = item.status === UNTRACKED || [1, 11, 13, 15].includes(item.status) ? 'added' : [2, 6, 10, 12, 14].includes(item.status) ? 'deleted' : [3, 4].includes(item.status) ? 'renamed' : 'modified';
+        files.push({ path: relative, status });
+      }
+    }
+    return normalizeChangedFiles(files);
+  } catch { return []; }
 }

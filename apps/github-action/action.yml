@@ -1,0 +1,70 @@
+name: DeployBuddy
+description: Your brutally honest, deterministic pre-deployment sanity checker.
+author: Precrafts Labs
+branding:
+  icon: shield
+  color: green
+inputs:
+  github-token:
+    description: Standard GitHub Actions token used only to create or update the optional pull request comment.
+    required: false
+  pr-comment:
+    description: Create or update one DeployBuddy comment when the event is pull_request.
+    required: false
+    default: 'false'
+  working-directory:
+    description: Workspace directory to inspect, relative to GITHUB_WORKSPACE.
+    required: false
+    default: .
+  fail-on-risk:
+    description: Fail the step when the deterministic risk score meets or exceeds this value (0-100). Use an empty value to disable the gate.
+    required: false
+    default: '66'
+  fail-on-readiness:
+    description: Fail the step for blocked or insufficient-evidence release readiness.
+    required: false
+    default: 'false'
+  fail-on-release-gates:
+    description: Fail the step when configured repository release gates fail. Set false for advisory rollout.
+    required: false
+    default: 'true'
+  create-annotations:
+    description: Add workflow annotations for deterministic risk reasons and Git guardrails.
+    required: false
+    default: 'true'
+outputs:
+  risk-score:
+    description: Deterministic DeployBuddy risk score from 0 to 100.
+  risk-level:
+    description: Deterministic risk level: safe, caution, or danger.
+  verdict:
+    description: Deterministic verdict: DEPLOY, QUESTIONABLE, or DO_NOT_DEPLOY.
+  confidence-score:
+    description: Evidence confidence score from 0 to 100; this does not modify risk.
+  confidence-level:
+    description: Evidence confidence level: low, medium, or high.
+  release-readiness:
+    description: Release readiness status: ready, needs_attention, blocked, or insufficient_evidence.
+  release-gates-status:
+    description: Release gate status: pass, fail, or not_configured.
+  release-gates-violations:
+    description: JSON array of deterministic release gate violations.
+  commit-sha:
+    description: Current checked-out Git revision SHA, or empty when unavailable.
+  commit-short-sha:
+    description: Short checked-out Git revision SHA, or empty when unavailable.
+  pull-request-head-sha:
+    description: Pull request head SHA from event metadata, or empty when unavailable.
+  pull-request-base-sha:
+    description: Pull request base SHA from event metadata, or empty when unavailable.
+  frameworks:
+    description: JSON array of detected framework identifiers.
+  git-dirty:
+    description: Whether the inspected working tree has uncommitted changes.
+  assessment-json:
+    description: Stable JSON assessment containing risk, confidence, project, Git, checks, and recommendations.
+  comment-url:
+    description: URL of the created or updated pull request comment, or empty when unavailable.
+runs:
+  using: node20
+  main: dist/index.js

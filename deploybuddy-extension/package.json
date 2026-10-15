@@ -2,7 +2,7 @@
   "name": "deploybuddy",
   "displayName": "DeployBuddy",
   "description": "Your brutally honest pre-deployment sanity checker.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "publisher": "precraftslabsPrecraftsDigitalLabs",
   "license": "MIT",
   "icon": "icon.png",
@@ -34,10 +34,27 @@
     "onChatParticipant:deploybuddy.deployment",
     "onCommand:deploybuddy.prePushCheck",
     "onCommand:deploybuddy.gitHealth",
-    "onCommand:deploybuddy.about"
+    "onCommand:deploybuddy.showPolicy",
+    "onCommand:deploybuddy.releaseReadiness",
+    "onCommand:deploybuddy.checkReleaseGates",
+    "onCommand:deploybuddy.createPolicyTemplate",
+    "onCommand:deploybuddy.about",
+    "onCommand:deploybuddy.saveBaseline",
+    "onCommand:deploybuddy.compareBaseline",
+    "onCommand:deploybuddy.clearBaseline",
+    "onCommand:deploybuddy.showHistory",
+    "onCommand:deploybuddy.clearHistory",
+    "onCommand:deploybuddy.showRiskChanges",
+    "onCommand:deploybuddy.showChangedAreas"
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "jsonValidation": [
+      {
+        "fileMatch": ".deploybuddy.json",
+        "url": "./schemas/deploybuddy.schema.json"
+      }
+    ],
     "commands": [
       {
         "command": "deploybuddy.checkDeployment",
@@ -67,9 +84,75 @@
         "icon": "$(git-branch)"
       },
       {
+        "command": "deploybuddy.showPolicy",
+        "title": "Show Policy",
+        "category": "DeployBuddy",
+        "icon": "$(law)"
+      },
+      {
+        "command": "deploybuddy.releaseReadiness",
+        "title": "Release Readiness",
+        "category": "DeployBuddy",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "deploybuddy.checkReleaseGates",
+        "title": "Check Release Gates",
+        "category": "DeployBuddy",
+        "icon": "$(verified)"
+      },
+      {
+        "command": "deploybuddy.createPolicyTemplate",
+        "title": "Create Policy Template",
+        "category": "DeployBuddy",
+        "icon": "$(new-file)"
+      },
+      {
         "command": "deploybuddy.about",
         "title": "About",
         "category": "DeployBuddy"
+      },
+      {
+        "command": "deploybuddy.saveBaseline",
+        "title": "Save Baseline",
+        "category": "DeployBuddy",
+        "icon": "$(save)"
+      },
+      {
+        "command": "deploybuddy.compareBaseline",
+        "title": "Compare With Baseline",
+        "category": "DeployBuddy",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "deploybuddy.clearBaseline",
+        "title": "Clear Baseline",
+        "category": "DeployBuddy",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "deploybuddy.showHistory",
+        "title": "Show History",
+        "category": "DeployBuddy",
+        "icon": "$(graph-line)"
+      },
+      {
+        "command": "deploybuddy.clearHistory",
+        "title": "Clear History",
+        "category": "DeployBuddy",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "deploybuddy.showRiskChanges",
+        "title": "Show Recent Risk Changes",
+        "category": "DeployBuddy",
+        "icon": "$(history)"
+      },
+      {
+        "command": "deploybuddy.showChangedAreas",
+        "title": "Show Changed Areas",
+        "category": "DeployBuddy",
+        "icon": "$(files)"
       }
     ],
     "configuration": {
@@ -105,6 +188,14 @@
             "description": "Run a fresh deterministic deployment check."
           },
           {
+            "name": "readiness",
+            "description": "Show the deterministic release readiness decision."
+          },
+          {
+            "name": "release",
+            "description": "Evaluate repository-configured final release gates."
+          },
+          {
             "name": "explain",
             "description": "Explain the latest deployment risk."
           },
@@ -123,6 +214,34 @@
           {
             "name": "git",
             "description": "Show fresh Git health and advisory source-control findings."
+          },
+          {
+            "name": "policy",
+            "description": "Show repository deployment policy and its evaluation."
+          },
+          {
+            "name": "compare",
+            "description": "Compare the current assessment with the saved local baseline."
+          },
+          {
+            "name": "baseline",
+            "description": "Show the saved baseline for the first workspace root."
+          },
+          {
+            "name": "history",
+            "description": "Show recent local deployment assessments."
+          },
+          {
+            "name": "trend",
+            "description": "Show deterministic risk and confidence trends."
+          },
+          {
+            "name": "changes",
+            "description": "Summarize current changed file areas without inspecting their contents."
+          },
+          {
+            "name": "risk-changes",
+            "description": "Show material risk and policy changes between recorded assessments."
           }
         ]
       }
@@ -145,16 +264,17 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "prepublishOnly": "npm run validate",
-    "compile": "tsc -p .",
+    "compile": "npm --prefix ../packages/core run build && tsc -p . && node scripts/copy-core.cjs",
     "watch": "tsc -watch -p .",
     "lint": "eslint src test",
     "test": "npm run compile && node --test --test-isolation=none test/risk.test.cjs test/services.test.cjs",
     "check:package": "node scripts/check-package.cjs",
     "validate": "npm run compile && npm run lint && npm test && npm run check:package",
-    "package:vsix": "vsce package --no-dependencies --no-rewrite-relative-links"
+    "package:vsix": "vsce package --no-dependencies"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@deploybuddy/core": "file:../packages/core",
     "@types/node": "^22.0.0",
     "@types/vscode": "^1.96.0",
     "@vscode/vsce": "^4.0.0",

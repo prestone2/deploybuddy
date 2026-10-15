@@ -1,7 +1,7 @@
 const vscode=require('vscode');const assert=require('node:assert/strict');const fs=require('node:fs');
 const {getGitSignals}=require('../out/services/gitService');const {analyzeGitGuardrails}=require('../out/core/analyzeGitGuardrails');
 exports.run=async()=>{
- const extension=vscode.extensions.getExtension('deploybuddy.deploybuddy');assert.ok(extension);await extension.activate();await vscode.workspace.getConfiguration('deploybuddy').update('aiEnabled',false,vscode.ConfigurationTarget.Global);
+ const extension=vscode.extensions.getExtension('precraftslabsPrecraftsDigitalLabs.deploybuddy');assert.ok(extension);await extension.activate();await vscode.workspace.getConfiguration('deploybuddy').update('aiEnabled',false,vscode.ConfigurationTarget.Global);
  let git=await getGitSignals();for(let i=0;(git.repositories.length<3||git.repositories.some(r=>r.ahead===null||r.behind===null))&&i<30;i++){await new Promise(r=>setTimeout(r,500));git=await getGitSignals()}assert.equal(git.repositories.length,3);
  const find=name=>{const repo=git.repositories.find(r=>r.root.endsWith('/'+name));assert.ok(repo);return repo};
  const clean=find('health-clean');assert.equal(clean.hasUncommittedChanges,false);assert.equal(clean.ahead,0);assert.equal(clean.behind,0);assert.equal(clean.detachedHead,false);

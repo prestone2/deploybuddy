@@ -1,28 +1,53 @@
 # DeployBuddy
 
-A humorous production deployment reality check, built with Vite, React, TypeScript, Tailwind CSS, and Lucide React.
+**Your brutally honest pre-deployment sanity checker. Know before you ship.**
 
-## Run locally
+DeployBuddy turns local workspace, Git, diagnostics, checks, and changed-file metadata into a clear deployment assessment. Use the same deterministic intelligence in VS Code, the terminal, or GitHub Actions.
+
+## Product surfaces
+
+- **VS Code:** deployment checks, Git guardrails, Release Readiness, repository Release Gates, local history, and `@deploybuddy` Chat. Optional explanations use the VS Code Language Model API.
+- **CLI:** `deploybuddy check`, `status`, `git`, `doctor`, `framework`, `checks`, `changes`, `readiness`, `release`, and local history/baseline commands.
+- **GitHub Action:** shared Core assessment, annotations, outputs, summary, optional single PR comment, and independent opt-in risk/readiness gates plus configured release-gate enforcement.
+- **Shared packages:** `@deploybuddy/core` owns deterministic platform-independent intelligence; `@deploybuddy/node-adapter` collects local Node/Git evidence.
+
+## Example
+
+```text
+Release Readiness: BLOCKED
+Risk: 78% — DO NOT DEPLOY
+Confidence: 91% — HIGH
+Policy: PASS
+Change Attention: HIGH
+
+Why:
+- 2 validation checks failed
+- Branch is behind upstream
+- Database migrations changed
+
+Next:
+Fix failing checks, synchronize the branch, and review the migration changes.
+```
+
+Risk, confidence, policy, change attention, readiness, and release gates are separate values. AI wording never calculates or changes deterministic outcomes. See [Concepts](docs/concepts.md) for the canonical model.
+
+## Documentation
+
+- [Repository configuration and JSON Schema](docs/configuration.md)
+- [CLI usage, JSON contract, and exit codes](docs/cli.md)
+- [VS Code extension](docs/vscode.md)
+- [GitHub Action](docs/github-action.md)
+- [Privacy](docs/privacy.md)
+- [Architecture and public APIs](docs/architecture.md)
+- [Release process](docs/releasing.md)
+
+## Development
 
 ```sh
 npm install
-npm run dev
+npm run validate:platform
+npm run release:check
+npm run dev # browser demo
 ```
 
-## Checks
-
-```sh
-npm run build
-npm run lint
-```
-
-The form calculates a verdict when submitted. Changed inputs are marked until recalculation. All risk rules live in `src/lib/calculateRisk.ts`; contextual messages live in `src/lib/generateVerdict.ts`. Theme preferences persist in localStorage. Sharing copies the calculated verdict to the clipboard and displays feedback; clipboard access requires localhost or HTTPS.
-
-The UI includes responsive cards, a CSS robot mascot, an animated risk gauge, reduced-motion support, and informational About and fictional Wall of Shame views. No backend or external images are required.
-
-## Wall of Shame
-
-Visit `/wall-of-shame` to review saved risky attempts. After calculating risk of at least 31%, explicitly choose **Add to Wall of Shame**. Entries stay in browser-local storage across refreshes, with random condition-aware titles, four sort modes, summary statistics, and five locally derived achievements. Delete entries individually or confirm **Clear Wall of Shame** in the keyboard-accessible dialog. Removing entries also updates their achievements. Storage access and record validation live in `src/lib/wallOfShame.ts`; no account, backend, or database is used.
-
-Routing uses React Router. Production static hosting should serve `index.html` for unknown paths so direct visits to `/wall-of-shame` and `/about` work.
-# deploybuddy
+`release:check` builds and packages local artifacts only. It never publishes, tags, or pushes. Public package versions are independent; the published VS Code 0.1.0 extension is prepared as 0.2.0, while Core, Node adapter, and CLI remain at 0.1.0 for their initial public package line. Read [Version and compatibility policy](docs/architecture.md) before changing contracts.

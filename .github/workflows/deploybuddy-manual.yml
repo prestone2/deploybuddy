@@ -1,0 +1,19 @@
+name: DeployBuddy
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploybuddy:
+    name: DeployBuddy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: DeployBuddy
+        uses: ./apps/github-action
+        with:
+          fail-on-risk: ''

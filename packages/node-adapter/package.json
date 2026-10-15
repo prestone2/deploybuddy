@@ -1,0 +1,24 @@
+{
+  "name": "@deploybuddy/node-adapter",
+  "version": "0.1.0",
+  "description": "Read-only Node.js workspace inspection for DeployBuddy.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": { "node": ">=20" },
+  "files": ["dist", "README.md", "LICENSE"],
+  "repository": { "type": "git", "url": "https://github.com/prestone2/deploybuddy.git", "directory": "packages/node-adapter" },
+  "homepage": "https://github.com/prestone2/deploybuddy#readme",
+  "bugs": { "url": "https://github.com/prestone2/deploybuddy/issues" },
+  "keywords": ["deployment", "git", "workspace", "node"],
+  "scripts": { "build": "tsc -p tsconfig.json", "test": "npm run build && node --test test/*.test.cjs" },
+  "dependencies": { "@deploybuddy/core": "file:../core" }
+}

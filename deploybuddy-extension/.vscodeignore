@@ -5,7 +5,6 @@
 src/**
 test/**
 scripts/**
-node_modules/**
 coverage/**
 .cache/**
 tmp/**
@@ -16,3 +15,6 @@ eslint.config.mjs
 package-lock.json
 !out/**/*.js
 !out/*.js
+!out/**/*.json
+!out/*.json
+out/**/*.d.ts

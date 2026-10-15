@@ -1,20 +1,12 @@
 import * as vscode from 'vscode';
-import { calculateDeploymentRisk } from '../core/calculateDeploymentRisk';
-import { getGitSignals, unavailableGit } from './gitService';
-import { getDiagnosticSignals } from './diagnosticsService';
-import { getTestSignals } from './testingService';
-import { getContextSignals } from './contextService';
-import type { DeploymentRiskResult, GitSignals, WorkspaceSignals } from '../types/deployment';
-export interface DeploymentSnapshot { signals: WorkspaceSignals; result: DeploymentRiskResult }
+import { randomUUID } from 'node:crypto';
+import { analyzeChanges, calculateDeploymentRisk, calculateEvidenceConfidence, collectWorkspaceSignals, evaluatePolicy, evaluateReleaseGates, evaluateReleaseReadiness, getDeploymentRecommendations, type ChangeAssessment, type DeploymentRiskResult, type EvidenceConfidence, type PolicyEvaluation, type ReleaseGateEvaluation, type ReleaseReadiness, type WorkspaceSignals } from '@deploybuddy/core';
+import { VSCodeWorkspaceAdapter } from './vscodeWorkspaceAdapter';
+export interface DeploymentSnapshot { sessionId: string; signals: WorkspaceSignals; result: DeploymentRiskResult; confidence: EvidenceConfidence; policy: PolicyEvaluation; changes: ChangeAssessment; readiness: ReleaseReadiness; releaseGates: ReleaseGateEvaluation }
 export interface DeploymentSession {
   readonly latest: DeploymentSnapshot | undefined;
   getSnapshot(fresh?: boolean): Promise<DeploymentSnapshot>;
   dispose(): void;
-}
-async function readGitWithTimeout(): Promise<GitSignals> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try { return await Promise.race([getGitSignals(), new Promise<GitSignals>(resolve => { timer = setTimeout(() => resolve(unavailableGit('Git signal collection timed out. Try checking again once Git finishes loading.')), 5000); })]); }
-  finally { if (timer) clearTimeout(timer); }
 }
 /** Commands and chat share one authoritative snapshot and collection pipeline. */
 export function createDeploymentSession(onSnapshot: (snapshot: DeploymentSnapshot) => void, onCollecting: () => void): DeploymentSession {
@@ -22,7 +14,8 @@ export function createDeploymentSession(onSnapshot: (snapshot: DeploymentSnapsho
   let collecting: Promise<DeploymentSnapshot> | undefined;
   let revision = 0;
   let disposed = false;
-  const folders = vscode.workspace.onDidChangeWorkspaceFolders?.(() => { latest = undefined; revision++; onCollecting(); });
+  const adapter = new VSCodeWorkspaceAdapter();
+  const folders = vscode.workspace.onDidChangeWorkspaceFolders?.(() => { latest = undefined; revision++; adapter.invalidate(); onCollecting(); });
   return {
     get latest() { return latest; },
     getSnapshot(fresh = false) {
@@ -31,8 +24,14 @@ export function createDeploymentSession(onSnapshot: (snapshot: DeploymentSnapsho
       onCollecting();
       const current = revision;
       collecting = (async () => {
-        const signals: WorkspaceSignals = { workspaceFolders: vscode.workspace.workspaceFolders?.map(f => f.name) ?? [], git: await readGitWithTimeout(), diagnostics: getDiagnosticSignals(), tests: getTestSignals(), context: getContextSignals() };
-        const snapshot = { signals, result: calculateDeploymentRisk(signals) };
+        const signals: WorkspaceSignals = await collectWorkspaceSignals(adapter);
+        const changes = analyzeChanges(await adapter.getChangedFiles?.() ?? []);
+        const result = calculateDeploymentRisk(signals);
+        const confidence = calculateEvidenceConfidence(signals);
+        const policy = evaluatePolicy(signals.policy, { risk: result, confidence, git: signals.git, diagnostics: signals.diagnostics, tests: signals.tests, checks: signals.checks ?? [], project: signals.project });
+        const readiness = evaluateReleaseReadiness({ risk: result, confidence, policy, changes, signals, recommendations: getDeploymentRecommendations(signals) });
+        const releaseGates = evaluateReleaseGates({ config: signals.policy?.policy?.release, risk: result, confidence, policy, changes, readiness });
+        const snapshot = { sessionId: randomUUID(), signals, result, confidence, policy, changes, readiness, releaseGates };
         if (disposed || current !== revision) throw new Error('Workspace changed while collecting signals. Please run the check again.');
         latest = snapshot;
         onSnapshot(snapshot);
